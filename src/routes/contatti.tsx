@@ -17,7 +17,15 @@ export const Route = createFileRoute("/contatti")({
 });
 
 function ContattiPage() {
-  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState({ nome: "", telefono: "", email: "", eta: "", msg: "" });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = `Ciao Silvia, sono ${form.nome}.\nTelefono: ${form.telefono}\nEmail: ${form.email}${form.eta ? `\nEtà bambino: ${form.eta} anni` : ""}${form.msg ? `\nMessaggio: ${form.msg}` : ""}`;
+    window.open(`https://wa.me/393347077707?text=${encodeURIComponent(text)}`, "_blank");
+  };
   return (
     <>
       <section className="bg-primary text-primary-foreground">
@@ -76,34 +84,26 @@ function ContattiPage() {
             </div>
           </div>
 
-          {/* FORM */}
+          {/* FORM → WhatsApp */}
           <form
-            onSubmit={(e) => { e.preventDefault(); setSent(true); }}
+            onSubmit={handleSubmit}
             className="rounded-3xl border border-border bg-card p-8 shadow-soft"
           >
             <h2 className="font-display text-3xl">Richiedi informazioni</h2>
             <p className="mt-2 text-sm text-muted-foreground">Compila il modulo, ti risponderemo entro 24 ore.</p>
-
-            {sent ? (
-              <div className="mt-8 rounded-2xl bg-primary/10 p-6 text-center">
-                <div className="text-4xl">🐴</div>
-                <p className="mt-3 font-display text-xl text-primary">Grazie! Ti contatteremo presto.</p>
+            <div className="mt-8 grid gap-4">
+              <Field label="Nome" name="nome" required value={form.nome} onChange={handleChange} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Telefono" name="telefono" type="tel" required value={form.telefono} onChange={handleChange} />
+                <Field label="Email" name="email" type="email" required value={form.email} onChange={handleChange} />
               </div>
-            ) : (
-              <div className="mt-8 grid gap-4">
-                <Field label="Nome" name="nome" required />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Telefono" name="telefono" type="tel" required />
-                  <Field label="Email" name="email" type="email" required />
-                </div>
-                <Field label="Età del bambino" name="eta" type="number" min={3} max={18} />
-                <Field label="Messaggio" name="msg" textarea />
-                <button type="submit" className="mt-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-primary-foreground shadow-soft transition hover:opacity-95">
-                  Invia richiesta
-                </button>
-                <p className="text-xs text-muted-foreground">Oppure scrivici su WhatsApp al <a href="https://wa.me/393347077707" className="text-primary underline">334 7077707</a></p>
-              </div>
-            )}
+              <Field label="Età del bambino" name="eta" type="number" min={3} max={18} value={form.eta} onChange={handleChange} />
+              <Field label="Messaggio" name="msg" textarea value={form.msg} onChange={handleChange} />
+              <button type="submit" className="mt-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-primary-foreground shadow-soft transition hover:opacity-95">
+                Invia via WhatsApp
+              </button>
+              <p className="text-xs text-muted-foreground">Il modulo aprirà WhatsApp con il messaggio precompilato. Se non hai WhatsApp, chiama il <a href="tel:+393347077707" className="text-primary underline">334 7077707</a>.</p>
+            </div>
           </form>
         </div>
       </section>
