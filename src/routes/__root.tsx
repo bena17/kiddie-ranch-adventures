@@ -73,6 +73,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#3a5a3a" },
+      { property: "og:title", content: "I Cavalieri del Colle — Centro Equestre per Bambini a Calenzano" },
+      { name: "twitter:title", content: "I Cavalieri del Colle — Centro Equestre per Bambini a Calenzano" },
+      { property: "og:description", content: "Centro estivo, equitazione e attività con i cavalli per bambini nelle colline di Calenzano (FI). Esperienze autentiche nella natura toscana." },
+      { name: "twitter:description", content: "Centro estivo, equitazione e attività con i cavalli per bambini nelle colline di Calenzano (FI). Esperienze autentiche nella natura toscana." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/zBmDzILq3Ze6TbHp4zt6m6UQ5y52/social-images/social-1781629819579-Duck-ai-image-2026-06-16-17-09.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/zBmDzILq3Ze6TbHp4zt6m6UQ5y52/social-images/social-1781629819579-Duck-ai-image-2026-06-16-17-09.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
