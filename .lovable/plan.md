@@ -1,90 +1,101 @@
-# Piano: Migrazione sito Cavalieri del Colle su Cloudflare Pages
+# Piano: Ponte automatico Lovable → GitHub → Cloudflare
 
-Obiettivo: portare il sito Lovable online su `cavalieridelcolle.it` spendendo il minimo possibile (~10-15€/anno solo per il rinnovo dominio), eliminando i 50€/anno dell'hosting WordPress.
+Obiettivo: configurare un workflow in cui ogni modifica fatta in chat su Lovable si pubblichi **automaticamente** sul sito live `cavalieridelcolle.it` ospitato gratis su Cloudflare, senza interventi tecnici manuali per ogni update.
 
-## Risultato finale
-- Sito live su **https://cavalieridelcolle.it** (e www)
-- Hosting **gratuito a vita** su Cloudflare Pages (SSL automatico, CDN globale)
-- Dominio rinnovato direttamente presso il registrar (~10-15€/anno)
-- Vecchio hosting WordPress disdetto
+## Come funzionerà a regime
 
-## Passi operativi
+```text
+Tu chiedi modifica in chat Lovable
+        ↓
+Lovable salva il codice
+        ↓ (sync automatico)
+Repository GitHub aggiornato
+        ↓ (webhook automatico)
+Cloudflare Pages rileva il push
+        ↓ (build automatica ~1 min)
+Sito live aggiornato su cavalieridelcolle.it
+```
 
-### 1. Preparare il sito per l'export statico
-- Verificare che il progetto TanStack Start sia configurato per il build di produzione (`bun run build`)
-- Assicurarsi che tutte le rotte siano prerenderizzate come HTML statico (le 5 pagine: home, centri-estivi, attivita, ranch, contatti)
-- Verificare che `sitemap.xml` e `robots.txt` siano inclusi nell'output
-- Il form contatti dovrà puntare a un servizio esterno gratuito (vedi punto 6)
+Tempo totale da modifica a pubblicazione: **2-3 minuti, zero lavoro manuale tuo**.
 
-### 2. Recuperare le credenziali del dominio da Silvia
-Servono per gestire i DNS. Chiedere a Silvia:
-- Dove ha comprato originariamente `cavalieridelcolle.it` (Aruba, Register.it, GoDaddy, ecc.)
-- Username e password del pannello registrar
-- Se il dominio è "incluso" nel pacchetto hosting WordPress, va **scorporato** prima della disdetta (chiamare l'assistenza del provider)
+## Setup iniziale (una volta sola, ~30 minuti)
 
-### 3. Creare account Cloudflare (gratuito)
-- Registrarsi su https://dash.cloudflare.com
-- Nessuna carta di credito richiesta per il piano Free
-- Creare un nuovo progetto su **Cloudflare Pages**
+### Step 1 — Collegare Lovable a GitHub
+Operazione tua nel pannello Lovable:
+1. Aprire il menu **+** in basso a sinistra nella chat
+2. Cliccare **GitHub → Connect project**
+3. Autorizzare la Lovable GitHub App sul tuo account GitHub (se non hai un account, registrarsi gratis su github.com)
+4. Selezionare l'account/organizzazione dove creare il repo
+5. Cliccare **Create Repository** → Lovable crea automaticamente il repository con tutto il codice attuale
+6. Verifica: il repo `cavalieri-del-colle` (o nome scelto) appare nel tuo GitHub
 
-### 4. Pubblicare il sito su Cloudflare Pages
-Due opzioni:
-- **Opzione GitHub (consigliata):** export del progetto Lovable su GitHub → collegare il repo a Cloudflare Pages → ogni modifica futura si pubblica con un click
-- **Opzione upload manuale:** scaricare la cartella `dist/` dal build locale e caricarla su Cloudflare Pages via drag-and-drop
+Da questo momento, **ogni modifica fatta in chat Lovable si pusha automaticamente su GitHub** in tempo reale.
 
-### 5. Collegare il dominio cavalieridelcolle.it
-Nel pannello registrar di Silvia, modificare i DNS:
-- Cambiare i **nameserver** del dominio con quelli forniti da Cloudflare (es. `xxx.ns.cloudflare.com`)
-- In alternativa, mantenere i nameserver attuali e aggiungere solo i record CNAME forniti da Cloudflare Pages
-- Cloudflare emette automaticamente certificato SSL (HTTPS) entro pochi minuti
-- Propagazione DNS: 1-24 ore
+### Step 2 — Creare account Cloudflare
+1. Registrarsi gratis su https://dash.cloudflare.com
+2. Nessuna carta di credito richiesta
+3. Verificare l'email
 
-### 6. Gestione form contatti
-Il form contatti attuale ha bisogno di un backend. Soluzioni gratuite:
-- **Formspree** (50 invii/mese gratis) – basta cambiare l'action del form
-- **Web3Forms** (250 invii/mese gratis)
-- **Mailto link** (apre il client email del visitatore, zero costi e zero setup)
-- In alternativa, sostituire il form con un grosso pulsante WhatsApp diretto al numero di Silvia
+### Step 3 — Connettere Cloudflare Pages al repo GitHub
+Nel pannello Cloudflare:
+1. Andare su **Workers & Pages → Create application → Pages → Connect to Git**
+2. Autorizzare Cloudflare ad accedere al repo GitHub
+3. Selezionare il repository `cavalieri-del-colle`
+4. Configurare il build:
+   - **Framework preset:** None (custom)
+   - **Build command:** `bun run build`
+   - **Build output directory:** `dist/client`
+   - **Root directory:** lasciare vuoto
+5. Cliccare **Save and Deploy** → primo deploy parte in 1-2 minuti
+6. Cloudflare assegna un URL tipo `cavalieri-del-colle.pages.dev` per test
 
-### 7. Email su @cavalieridelcolle.it (se usata)
-Verificare con Silvia se usa caselle email tipo `info@cavalieridelcolle.it`:
-- **Se sì:** prima di disdire l'hosting WordPress, attivare un servizio email separato (Zoho Mail gratuito fino a 5 caselle, oppure mail-only del registrar a ~10€/anno)
-- **Se no:** continuare a usare `icavalieridelcolle@yahoo.com` già presente nel sito
+**Nota tecnica:** il progetto è SSR (server-side rendering) con preset Cloudflare Workers. Cloudflare Pages supporta nativamente il deploy SSR via il file `wrangler.json` generato in `dist/server/`. Se Pages dovesse dare problemi con SSR, l'alternativa è **Cloudflare Workers** diretto via comando `wrangler deploy` — questa scelta la verifichiamo durante il setup vero.
 
-### 8. Disdetta hosting WordPress
-Solo dopo che il nuovo sito è online e funzionante:
-- Esportare backup completo del vecchio WordPress (sicurezza)
-- Disdire l'hosting mantenendo solo il dominio attivo
-- Confermare con il provider che il dominio NON venga cancellato insieme all'hosting
+### Step 4 — Collegare il dominio cavalieridelcolle.it
+1. In Cloudflare Pages → progetto → **Custom domains → Set up a custom domain**
+2. Inserire `cavalieridelcolle.it` e `www.cavalieridelcolle.it`
+3. Cloudflare mostra i record DNS da configurare (in genere: cambiare nameserver del dominio)
+4. Andare nel pannello del registrar dove Silvia ha il dominio (Aruba/Register.it/altro)
+5. Cambiare i **nameserver** con quelli forniti da Cloudflare (es. `xyz.ns.cloudflare.com`)
+6. Attendere propagazione DNS (1-24 ore)
+7. Cloudflare emette SSL automatico → sito live su https://cavalieridelcolle.it
 
-## Costi finali annui per Silvia
+### Step 5 — Disdetta hosting WordPress
+Solo **dopo** verifica che il nuovo sito è live:
+1. Backup completo del vecchio WordPress (sicurezza)
+2. Disdetta hosting mantenendo dominio attivo
+3. Confermare con provider che dominio non venga cancellato
+4. Se Silvia usa email `@cavalieridelcolle.it`, attivare prima un servizio email separato (Zoho Mail gratis fino a 5 caselle, o servizio mail-only del registrar ~10€/anno)
+
+## Workflow modifiche future (dopo il setup)
+
+Quando Silvia chiederà un aggiornamento:
+1. Apri Lovable, scrivi in chat: "cambia le date dei centri estivi 2027"
+2. Io modifico il codice → push automatico su GitHub
+3. Cloudflare rileva il push → build automatica (~1 minuto)
+4. Sito live aggiornato su `cavalieridelcolle.it`
+5. **Zero comandi da terminale, zero upload manuali**
+
+## Costi finali annui
 | Voce | Costo |
 |---|---|
+| GitHub (account personale) | 0€ |
+| Cloudflare Pages | 0€ |
 | Dominio cavalieridelcolle.it (rinnovo) | ~10-15€ |
-| Hosting Cloudflare Pages | 0€ |
 | SSL/HTTPS | 0€ |
-| Form contatti (Formspree free tier) | 0€ |
-| Email (se serve, Zoho free) | 0€ |
-| **Totale** | **~10-15€/anno** |
+| **Lovable** (se vuoi continuare a modificare in chat) | Vedi nota sotto |
 
-Risparmio rispetto ai 50€ attuali: **~35-40€/anno**.
-
-## Modifiche future
-Quando Silvia chiederà aggiornamenti (foto nuove, date centri estivi, prezzi):
-1. Aprire il progetto Lovable, fare le modifiche in chat
-2. Rifare il build ed esportare la cartella `dist/`
-3. Caricarla su Cloudflare Pages (o push su GitHub se collegato)
-4. Le modifiche sono live in 1-2 minuti
-
-Tempo stimato per aggiornamento medio: 10-15 minuti.
+**Nota Lovable:** Lovable Free permette 5 crediti gratis al giorno (capped a 30 al mese). Se Silvia chiede pochi update all'anno (2-3 modifiche), bastano i crediti gratis. Se chiede modifiche più frequenti, ti potrebbe servire il piano Pro Lovable (~20$/mese) ma solo per il mese in cui fai modifiche — puoi disdire e riattivare al bisogno.
 
 ## Cosa NON è incluso in questo piano
-- Implementazione codice del backend form (verrà fatta in build mode dopo approvazione)
-- Modifiche al design o ai contenuti del sito attuale
-- Operazioni manuali nel pannello Cloudflare/registrar: queste le farai tu (o io ti guido passo-passo nei messaggi successivi), Lovable non ha accesso a quegli account
+- Operazioni nei pannelli esterni (GitHub, Cloudflare, registrar): le farai tu seguendo le mie istruzioni passo-passo
+- Lovable non ha accesso a quegli account, posso solo guidarti
+- Eventuale debugging di problemi di deploy Cloudflare (se Pages non gestisce bene l'SSR, valutiamo Workers o Netlify come fallback)
 
-## Prossimo passo dopo l'approvazione
-In build mode posso:
-1. Aggiungere l'integrazione form contatti (Formspree o WhatsApp button) – dimmi quale preferisci
-2. Verificare che il build produca output 100% statico compatibile con Cloudflare Pages
-3. Generare istruzioni dettagliate screenshot-by-screenshot per i punti che richiedono il tuo intervento manuale (Cloudflare + DNS registrar)
+## Prossimi passi pratici dopo l'approvazione
+Ti guido nell'ordine corretto:
+1. Prima: connessione Lovable ↔ GitHub (puoi farlo subito, basta cliccare il pulsante +)
+2. Poi: setup Cloudflare Pages con il repo
+3. Infine: collegamento dominio + disdetta hosting WordPress
+
+Vuoi che ti scriva le **istruzioni screenshot-by-screenshot** per il primo step (connessione GitHub) appena approvi questo piano?
